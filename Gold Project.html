@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Supabase CRUD (HTML + JS)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+    input, select, button { margin: 5px; padding: 8px; }
+    .task, .card, .user { 
+      margin: 10px 0; 
+      padding: 8px; 
+      border: 1px solid #ccc; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .task button, .card button { 
+      background: red; 
+      color: white; 
+      border: none; 
+      padding: 5px 10px; 
+      cursor: pointer; 
+      border-radius: 4px; 
+    }
+     body { font-family: Arial, sans-serif; margin: 40px; }
+    input, button { margin: 5px; padding: 8px; }
+    .box { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+     body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { margin: 5px; padding: 8px; }
+    .product { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+    button { cursor: pointer; }
+  </style>
+</head>
+<!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    function sankalp(){
+    console.log('sankalp called');
+}
+    // Supabase setup
+    const supabaseUrl = "https://dklcbcbgpdrqsqupaaeb.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrbGNiY2JncGRycXNxdXBhYWViIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzI1ODk1MiwiZXhwIjoyMDcyODM0OTUyfQ.EN8lHW9BBf1qSNXw9fFnFU1rWgIoOsWqltks57qp-pY"; // apna anon key lagao
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+    /* ---------------- CARDS CRUD ---------------- */
+
+    // add to card
+   async function addCard() {
+  const size = document.getElementById("sizeInput").value;
+  const quantity = parseInt(document.getElementById("quantityInput").value, 10);
+
+  // ⚡ User ID ko HTML se lena (jaise hidden input ya global variable)
+  const userId = window.currentUserId; // Example: login ke baad set kar dena
+
+  if (!userId) {
+    alert("Please Login");
+    return;
+  }
+
+  if (!size || !quantity) {
+    return alert("Please select size and enter quantity");
+  }
+
+  const { error } = await client
+    .from("card")
+    .insert([{ user_id: userId, size, quantity }]); 
+
+  if (error) {
+    console.error(error);
+    alert("Error inserting card!");
+  } else {
+    document.getElementById("sizeInput").value = "";
+    document.getElementById("quantityInput").value = "";
+    loadCards();
+  }
+}
+
+
+    // delete card api
+    async function deleteCard(id) {
+      await client.from("card").delete().eq("id", id);
+      loadCards();
+    }
+
+    async function loadCards() {
+      const { data, error } = await client.from("card").select("*").order("id", { ascending: false });
+      if (error) { console.error(error); return; }
+
+      const list = document.getElementById("cardList");
+      list.innerHTML = "";
+      data.forEach(c => {
+        list.innerHTML += `
+          <div class="card">
+            <span>🃏 Size: ${c.size} | Qty: ${c.quantity} <small>(${c.created_at})</small></span>
+            <button onclick="deleteCard(${c.id})">Delete</button>
+          </div>`;
+      });
+    }
+
+    /* ---------------- USERS CRUD ---------------- */
+
+    // get User api 
+async function loadUsers() {
+  const { data, error } = await client
+    .from("Users")
+    .select("*")
+    .order("user_id", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const userList = document.getElementById("userList");
+  userList.innerHTML = "";
+
+  data.forEach((u) => {
+    userList.innerHTML += `
+      <div class="user">
+        👤 <b>${u.Name}</b>  
+        | 🆔 <b>${u.user_id}</b>
+        | 📧 ${u.Email || "N/A"}  
+        | 📱 ${u.phonenumber || "N/A"}  
+        | <small>Created: ${u.createddate}</small>
+      </div>
+    `;
+  });
+}
+
+
+
+
+    // Page load pe cards load karein
+    loadCards();
+
+
+     async function loadUsers() {
+      const { data, error } = await client.from("Users").select("user_id, Name, lastname, Email, phonenumber, createddate").order("user_id", { ascending: true });
+      if (error) { console.error(error); alert("Error fetching users"); return; }
+
+      const userList = document.getElementById("userList");
+      userList.innerHTML = "";
+      data.forEach(u => {
+        userList.innerHTML += `
+          <div class="user">
+            <div>👤 <b>${u.Name}</b> ${u.lastname || ""} | 🆔 <b>${u.user_id}</b> | 📧 ${u.Email || "N/A"} | 📱 ${u.phonenumber || "N/A"}</div>
+            <div><small>Created: ${u.createddate}</small></div>
+          </div>`;
+      });
+    }
+
+    // ---------------- ADD USER (includes password) ----------------
+    // Adds user and sets window.currentUserId to the inserted user's id (so you can immediately add cards)
+    // sinup api endpoints
+    async function addUser(userUUID) {
+
+
+  const name = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const phoneNumber = document.getElementById("phoneNumber").value.trim();
+  const password = document.getElementById("password").value; // raw password (testing only)
+
+  if (!name || !lastName || !email || !phoneNumber || !password) {
+    alert("Please fill all fields!");
+    return;
+  }
+
+  const { data, error } = await client
+    .from("Users")
+    .insert([{
+      user_id: userUUID,   // ✅ Auth se mila UUID yaha save karna hai
+      Name: name,
+      lastname: lastName,
+      Email: email,
+      phonenumber: phoneNumber,
+      password: password,
+      createddate: new Date().toISOString()
+    }])
+    .select();
+
+  if (error) {
+    console.error(error);
+    alert("Error inserting user!");
+    return;
+  }
+
+  const inserted = data && data[0];
+  if (inserted && inserted.user_id) {
+    // ✅ Current User set karo
+    window.currentUserId = inserted.user_id;
+  }
+
+  alert("User added successfully!");
+  document.getElementById("firstName").value = "";
+  document.getElementById("lastName").value = "";
+  document.getElementById("email").value = "";
+  document.getElementById("phoneNumber").value = "";
+  document.getElementById("password").value = "";
+
+  loadUsers();
+}
+
+
+
+     async function signIn() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+
+    if (!email || !password) {
+      alert("Please enter email and password!");
+      return;
+    }
+
+    // Check user in DB
+    const { data, error } = await client
+      .from("Users")
+      .select("user_id, Name, Email, password")
+      .eq("Email", email)
+      .eq("password", password)  
+      
+
+      
+      
+      
+     
+
+    if (error) {
+      console.error(error);
+      alert("Error checking user!");
+      return;
+    }
+
+    if (data.length > 0) {
+      // user found
+      const user = data[0];
+      window.currentUserId = user.user_id; // Save logged-in user id
+      alert(`Login successful! Welcome ${user.Name}`);
+    } else {
+      alert("Invalid email or password!");
+    }
+  }
+
+
+  
+// sinup with authenatication 
+   async function signUp() {
+
+
+    const name = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
+  const email = document.getElementById("signupEmail").value.trim();
+  const phoneNumber = document.getElementById("phoneNumber").value.trim();
+  const password = document.getElementById("signupPassword").value; // raw password (testing only)
+
+   console.log("name",name,"lastName", lastName,"email",email, "phoneNumber",phoneNumber,"password", password)
+  if (!name || !lastName || !email || !phoneNumber || !password) {
+    alert("Please fill all fields!");
+    return;
+  }
+  
+
+
+
+      if (!email || !password) {
+        alert("Please enter email and password!");
+        return;
+      }
+
+      let signUpResponse = await client.auth.signUp({ email, password });
+
+       
+
+      if (signUpResponse.error) {
+        console.error(error);
+        alert("Error: " + error.message);
+      } else {
+
+        console.log("data", signUpResponse.data);
+
+const user = signUpResponse.data.user;
+
+         const userUUID = user.id;
+           const uuidString = String(userUUID); 
+
+        const { data, error } = await client
+    .from("Users")
+    .insert([{
+     Name: name,
+      lastname: lastName,
+      Email: email,
+      phonenumber: phoneNumber,
+      password: password,
+      supabaseuserid :uuidString,
+      createddate: new Date().toISOString()
+    }])
+    .select();
+
+  if (error) {
+    console.error(error);
+    alert("Error inserting user!");
+    return;
+  }
+
+  const inserted = data && data[0];
+  if (inserted && inserted.user_id) {
+    // ✅ Current User set karo
+    window.currentUserId = inserted.user_id;
+  }
+
+  alert("User added successfully!");
+  document.getElementById("firstName").value = "";
+  document.getElementById("lastName").value = "";
+  document.getElementById("email").value = "";
+  document.getElementById("phoneNumber").value = "";
+  document.getElementById("password").value = "";
+  document.getElementById("supabaseuserid").value = "";
+
+
+
+
+
+        alert("Signup successful! Check your email for confirmation.");
+
+    // const userUUID = data.user?.id;
+
+
+        console.log(data);
+      }
+    }
+    
+
+    // signin with authenatication
+     async function signIn() {
+      const email = document.getElementById("signinEmail").value.trim();
+      const password = document.getElementById("signinPassword").value.trim();
+
+      if (!email || !password) {
+        alert("Please enter email and password!");
+        return;
+      }
+
+      const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        console.error(error);
+        alert("Error: " + error.message);
+      } else {
+        alert("Login successful! Welcome 🎉");
+        console.log(data);
+      }
+    }
+
+
+    // add product api endpoint 
+       async function addProduct() {
+      const productname = document.getElementById("productName").value.trim();
+      const productimage = document.getElementById("productImage").value.trim();
+      const productprice = parseInt(document.getElementById("productPrice").value);
+      const productavailable = parseInt(document.getElementById("productAvailable").value);
+
+      const { data, error } = await client.from("Products").insert([
+        {
+          productname,
+          productimage,
+          productprice,
+          productavailable
+        }
+      ]);
+
+      if (error) {
+        alert("Insert Error: " + error.message);
+      } else {
+        alert("Product Added!");
+        fetchProducts();
+      }
+    }
+
+
+    async function fetchProducts() {
+      const { data, error } = await client.from("Products").select("*");
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const listDiv = document.getElementById("productsList");
+      listDiv.innerHTML = "";
+
+      data.forEach(product => {
+        listDiv.innerHTML += `
+          <div class="product">
+            <strong>ID: ${product.id}</strong><br>
+            <strong>${product.productname}</strong> - Rs.${product.productPrice} 
+            [Available: ${product.productavailable}]<br>
+            <img src="${product.productimage}" alt="No Image" width="100"><br>
+          </div>
+        `;
+      });
+    }
+
+
+</script>
+<body>
+  <h1>Supabase CRUD (HTML + JS)</h1>
+
+  <!-- ---------------- CARDS ---------------- -->
+  <h2>Cards</h2>
+  <!-- Picklist for Size -->
+  <select id="sizeInput">
+    <option value="">-- Select Size --</option>
+    <option value="S">S</option>
+    <option value="M">M</option>
+    <option value="L">L</option>
+    <option value="XL">XL</option>
+    <option value="XXL">XXL</option>
+  </select>
+
+  <input id="quantityInput" type="number" placeholder="Enter quantity" />
+  <button onclick="addCard()">Add Card</button>
+
+  <h3>Card List</h3>
+  <div id="cardList"></div>
+
+  <!-- ---------------- USERS ---------------- -->
+  <h2>Users</h2>
+  <button onclick="loadUsers()">Load Users</button>
+  <div id="userList"></div>
+
+
+
+
+
+ <h2>SingUp</h2>
+<div>
+  <input type="text" id="firstName" placeholder="First Name" />
+  <input type="text" id="lastName" placeholder="Last Name" />
+  <input type="email" id="signupEmail" placeholder="Email" />
+  <input type="number" id="phoneNumber" placeholder="Phone Number" />
+     <input type="password" id="signupPassword" placeholder="Password" />
+  <button onclick="signUp()">Add User</button>
+</div>
+
+
+<h2>Sign In</h2>
+<div>
+  <input type="email" id="loginEmail" placeholder="Email" />
+  <input type="password" id="loginPassword" placeholder="Password" />
+  <button onclick="signIn()">Sign In</button>
+</div>
+
+<!-- 
+ <div class="box">
+    <h2>Sign Up</h2>
+    <input type="email" id="signupEmail" placeholder="Enter email" />
+    <input type="password" id="signupPassword" placeholder="Enter password" />
+    <button onclick="signUp()">Sign Up</button>
+  </div> -->
+
+  <!-- Sign In -->
+  <div class="box">
+    <h2>Sign In</h2>
+    <input type="email" id="signinEmail" placeholder="Enter email" />
+    <input type="password" id="signinPassword" placeholder="Enter password" />
+    <button onclick="signIn()">Sign In</button>
+  </div>
+
+    <h2>Add / Update Product</h2>
+  <form id="productForm">
+    <input type="text" id="productId" placeholder="Product ID (for Update/Delete)"><br>
+    <input type="text" id="productName" placeholder="Product Name" required><br>
+    <input type="text" id="productImage" placeholder="Product Image URL"><br>
+    <input type="number" id="productPrice" placeholder="Product Price" required><br>
+    <input type="number" id="productAvailable" placeholder="Available (1 or 0)" required><br>
+    
+    <button type="button" onclick="addProduct()">Add Product</button>
+    <button type="button" onclick="updateProduct()">Update Product</button>
+    <button type="button" onclick="deleteProduct()">Delete Product</button>
+  </form>
+
+  <h2>Products List</h2>
+  <div id="productsList"></div>
+
+
+
+  
+</body>
+</html>

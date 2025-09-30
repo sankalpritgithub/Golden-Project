@@ -331,57 +331,57 @@ const user = signUpResponse.data.user;
     }
 
 
- const form = document.getElementById('productForm')
+document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById('productForm')
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault()
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault()
 
-      const productName = document.getElementById('productName').value
-      const file = document.getElementById('productImage').files[0]
+        const productName = document.getElementById('productName').value
+        const file = document.getElementById('productImage').files[0]
 
-      if (!file) {
-        alert("❌ Please select an image")
-        return
-      }
+        if (!file) {
+          alert("❌ Please select an image")
+          return
+        }
 
-      // unique filename banane ke liye timestamp use karo
-      const fileName = `${Date.now()}_${file.name}`
+        // unique filename
+        const fileName = `${Date.now()}_${file.name}`
 
-      // Upload to Supabase Storage (maan lo bucket ka naam 'product-images' hai)
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('product-images') // 👈 apna bucket ka naam use karo
-        .upload(fileName, file)
+        // Upload to Supabase Storage (bucket ka naam apna daal)
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('product-images') // 👈 apna bucket ka naam
+          .upload(fileName, file)
 
-      if (uploadError) {
-        console.error(uploadError)
-        alert("❌ Error uploading image: " + uploadError.message)
-        return
-      }
+        if (uploadError) {
+          console.error(uploadError)
+          alert("❌ Error uploading image: " + uploadError.message)
+          return
+        }
 
-      // Public URL nikal lo
-      const { data: urlData } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(fileName)
+        // Public URL nikal lo
+        const { data: urlData } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName)
 
-      const imageUrl = urlData.publicUrl
+        const imageUrl = urlData.publicUrl
 
-      // Insert product with image URL
-      const { data, error } = await supabase
-        .from('products')
-        .insert([
-          { productname: productName, productimage: imageUrl }
-        ])
+        // Insert product in table
+        const { data, error } = await supabase
+          .from('products')  // 👈 apne table ka exact naam
+          .insert([
+            { productname: productName, productimage: imageUrl }
+          ])
 
-      if (error) {
-        console.error(error)
-        alert("❌ Error inserting product: " + error.message)
-      } else {
-        console.log(data)
-        alert("✅ Product saved with image successfully!")
-      }
+        if (error) {
+          console.error(error)
+          alert("❌ Error inserting product: " + error.message)
+        } else {
+          console.log(data)
+          alert("✅ Product saved successfully with image!")
+        }
+      })
     })
-
-
     
 
 
@@ -433,11 +433,14 @@ const user = signUpResponse.data.user;
 
 
 
-<form id="productForm">
-  <input type="text" id="productName" placeholder="Enter Product Name" required>
-  <input type="file" id="productImage" accept="image/*" required>
-  <button type="submit">Save</button>
-</form>
+ <h2>Add Product with Image</h2>
+
+  <form id="productForm">
+    <input type="text" id="productName" placeholder="Enter Product Name" required>
+    <input type="file" id="productImage" accept="image/*" required>
+    <button type="submit">Save</button>
+  </form>
+
 
   
 </body>

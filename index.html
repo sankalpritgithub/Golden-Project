@@ -84,8 +84,7 @@ async function loadUsers() {
 
 
     // Page load pe cards load karein
-    loadCards();
-
+    
 
      async function loadUsers() {
       const { data, error } = await client.from("Users").select("user_id, Name, lastname, Email, phonenumber, createddate").order("user_id", { ascending: true });

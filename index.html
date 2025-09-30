@@ -348,9 +348,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // unique filename
         const fileName = `${Date.now()}_${file.name}`
 
-        // Upload to Supabase Storage (bucket ka naam apna daal)
+        // Upload to Supabase Storage (apne bucket ka naam daalna h)
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('product-images') // 👈 apna bucket ka naam
+          .from('product-images') // 👈 apna bucket name
           .upload(fileName, file)
 
         if (uploadError) {
@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Insert product in table
         const { data, error } = await supabase
-          .from('products')  // 👈 apne table ka exact naam
+          .from('products')  // 👈 apne table ka naam
           .insert([
             { productname: productName, productimage: imageUrl }
           ])
@@ -379,10 +379,10 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           console.log(data)
           alert("✅ Product saved successfully with image!")
+          form.reset()
         }
       })
-    })
-    
+    })    
 
 
 </script>
@@ -433,13 +433,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
- <h2>Add Product with Image</h2>
+  <h2>Add Product with Image</h2>
 
   <form id="productForm">
     <input type="text" id="productName" placeholder="Enter Product Name" required>
     <input type="file" id="productImage" accept="image/*" required>
     <button type="submit">Save</button>
   </form>
+
 
 
   

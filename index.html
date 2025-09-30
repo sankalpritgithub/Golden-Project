@@ -45,57 +45,10 @@
     /* ---------------- CARDS CRUD ---------------- */
 
     // add to card
-   async function addCard() {
-  const size = document.getElementById("sizeInput").value;
-  const quantity = parseInt(document.getElementById("quantityInput").value, 10);
-
-  // ⚡ User ID ko HTML se lena (jaise hidden input ya global variable)
-  const userId = window.currentUserId; // Example: login ke baad set kar dena
-
-  if (!userId) {
-    alert("Please Login");
-    return;
-  }
-
-  if (!size || !quantity) {
-    return alert("Please select size and enter quantity");
-  }
-
-  const { error } = await client
-    .from("card")
-    .insert([{ user_id: userId, size, quantity }]); 
-
-  if (error) {
-    console.error(error);
-    alert("Error inserting card!");
-  } else {
-    document.getElementById("sizeInput").value = "";
-    document.getElementById("quantityInput").value = "";
-    loadCards();
-  }
-}
-
+   
 
     // delete card api
-    async function deleteCard(id) {
-      await client.from("card").delete().eq("id", id);
-      loadCards();
-    }
-
-    async function loadCards() {
-      const { data, error } = await client.from("card").select("*").order("id", { ascending: false });
-      if (error) { console.error(error); return; }
-
-      const list = document.getElementById("cardList");
-      list.innerHTML = "";
-      data.forEach(c => {
-        list.innerHTML += `
-          <div class="card">
-            <span>🃏 Size: ${c.size} | Qty: ${c.quantity} <small>(${c.created_at})</small></span>
-            <button onclick="deleteCard(${c.id})">Delete</button>
-          </div>`;
-      });
-    }
+   
 
     /* ---------------- USERS CRUD ---------------- */
 
@@ -459,28 +412,7 @@ const user = signUpResponse.data.user;
 <body>
   <h1>Supabase CRUD (HTML + JS)</h1>
 
-  <!-- ---------------- CARDS ---------------- -->
-  <h2>Cards</h2>
-  <!-- Picklist for Size -->
-  <select id="sizeInput">
-    <option value="">-- Select Size --</option>
-    <option value="S">S</option>
-    <option value="M">M</option>
-    <option value="L">L</option>
-    <option value="XL">XL</option>
-    <option value="XXL">XXL</option>
-  </select>
 
-  <input id="quantityInput" type="number" placeholder="Enter quantity" />
-  <button onclick="addCard()">Add Card</button>
-
-  <h3>Card List</h3>
-  <div id="cardList"></div>
-
-  <!-- ---------------- USERS ---------------- -->
-  <h2>Users</h2>
-  <button onclick="loadUsers()">Load Users</button>
-  <div id="userList"></div>
 
 
 

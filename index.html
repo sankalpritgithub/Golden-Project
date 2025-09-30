@@ -305,29 +305,7 @@ const user = signUpResponse.data.user;
 
 
     // add product api endpoint 
-       async function addProduct() {
-      const productname = document.getElementById("productName").value.trim();
-      const productimage = document.getElementById("productImage").value.trim();
-      const productprice = parseInt(document.getElementById("productPrice").value);
-      const productavailable = parseInt(document.getElementById("productAvailable").value);
-
-      const { data, error } = await client.from("Products").insert([
-        {
-          productname,
-          productimage,
-          productprice,
-          productavailable
-        }
-      ]);
-
-      if (error) {
-        alert("Insert Error: " + error.message);
-      } else {
-        alert("Product Added!");
-        fetchProducts();
-      }
-    }
-
+      
 
     async function fetchProducts() {
       const { data, error } = await client.from("Products").select("*");
@@ -451,21 +429,7 @@ const user = signUpResponse.data.user;
     <button onclick="signIn()">Sign In</button>
   </div>
 
-    <h2>Add / Update Product</h2>
-  <form id="productForm">
-    <input type="text" id="productId" placeholder="Product ID (for Update/Delete)"><br>
-    <input type="text" id="productName" placeholder="Product Name" required><br>
-    <input type="text" id="productImage" placeholder="Product Image URL"><br>
-    <input type="number" id="productPrice" placeholder="Product Price" required><br>
-    <input type="number" id="productAvailable" placeholder="Available (1 or 0)" required><br>
-    
-    <button type="button" onclick="addProduct()">Add Product</button>
-    <button type="button" onclick="updateProduct()">Update Product</button>
-    <button type="button" onclick="deleteProduct()">Delete Product</button>
-  </form>
-
-  <h2>Products List</h2>
-  <div id="productsList"></div>
+ 
 
 
 

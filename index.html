@@ -330,8 +330,7 @@ const user = signUpResponse.data.user;
       });
     }
 
-
-document.addEventListener("DOMContentLoaded", () => {
+ document.addEventListener("DOMContentLoaded", () => {
       const form = document.getElementById('productForm')
 
       form.addEventListener('submit', async (e) => {
@@ -348,9 +347,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // unique filename
         const fileName = `${Date.now()}_${file.name}`
 
-        // Upload to Supabase Storage (apne bucket ka naam daalna h)
+        // Upload to Supabase Storage
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('product-images') // 👈 apna bucket name
+          .from('product-images') // 👈 bucket name
           .upload(fileName, file)
 
         if (uploadError) {
@@ -368,7 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Insert product in table
         const { data, error } = await supabase
-          .from('products')  // 👈 apne table ka naam
+          .from('products')  // 👈 apne table ka exact naam
           .insert([
             { productname: productName, productimage: imageUrl }
           ])
@@ -382,7 +381,8 @@ document.addEventListener("DOMContentLoaded", () => {
           form.reset()
         }
       })
-    })    
+    })
+   
 
 
 </script>
@@ -430,7 +430,6 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 
  
-
 
 
   <h2>Add Product with Image</h2>

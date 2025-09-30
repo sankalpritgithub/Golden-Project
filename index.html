@@ -401,31 +401,65 @@ const user = signUpResponse.data.user;
     }
 
 
-  document.getElementById('uploadBtn').addEventListener('click', function() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
+ async function uploadImage() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      const productName = document.getElementById('productName').value;
 
-    if (!file) {
-        alert('Please select an image!');
-        return;
-    }
+      if (!file || !productName) {
+          alert('Please select image and enter product name');
+          return;
+      }
 
-    // Preview image
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const preview = document.getElementById('preview');
-        preview.src = e.target.result;
-        preview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
+      // 3️⃣ Preview
+      const reader = new FileReader();
+      reader.onload = function(e){
+          const img = document.getElementById('preview');
+          img.src = e.target.result;
+          img.style.display = 'block';
+      }
+      reader.readAsDataURL(file);
 
-    // Optional: send to backend
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // fetch('/api/upload', { method: 'POST', body: formData });
-});
+      // 4️⃣ Upload to Supabase Storage
+      const fileName = `${Date.now()}_${file.name}`;
+      const { data, error: uploadError } = await supabase
+        .storage
+        .from('product-images')  // bucket name
+        .upload(fileName, file);
 
+      if(uploadError) { 
+          console.error(uploadError);
+          alert('Upload failed!');
+          return;
+      }
 
+      // 5️⃣ Get public URL
+      const { publicURL, error: urlError } = supabase
+        .storage
+        .from('product-images')
+        .getPublicUrl(fileName);
+
+      if(urlError) {
+          console.error(urlError);
+          alert('Getting URL failed!');
+          return;
+      }
+
+      // 6️⃣ Save to Supabase table
+      const { data: dbData, error: dbError } = await supabase
+        .from('products')
+        .insert([
+          { name: productName, productimage: publicURL }
+        ]);
+
+      if(dbError) {
+          console.error(dbError);
+          alert('DB insert failed!');
+          return;
+      }
+
+      alert('Product saved! Image URL: ' + publicURL);
+  }
 
 
     
@@ -514,12 +548,11 @@ const user = signUpResponse.data.user;
 
 
 
-  <h1>Upload Product Image</h1>
   
-  <input type="file" id="fileInput" accept="image/*">
-  <button id="uploadBtn">Upload</button>
-  
-  <img id="preview" src="" alt="Image Preview" style="display:none;">
+<h2>Upload Product Image</h2>
+<input type="file" id="fileInput" accept="image/*">
+<input type="text" id="productName" placeholder="Enter Product Name">
+<button onclick="uploadImage()">Upload</button>
 
   
 </body>

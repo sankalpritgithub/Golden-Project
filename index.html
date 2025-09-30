@@ -401,30 +401,31 @@ const user = signUpResponse.data.user;
     }
 
 
-    const form = document.getElementById('productForm')
+  document.getElementById('uploadBtn').addEventListener('click', function() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('Please select an image!');
+        return;
+    }
+
+    // Preview image
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('preview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+
+    // Optional: send to backend
+    // const formData = new FormData();
+    // formData.append('file', file);
+    // fetch('/api/upload', { method: 'POST', body: formData });
+});
 
 
-     form.addEventListener('submit', async (e) => {
-      e.preventDefault()
-
-      const productName = document.getElementById('productName').value
-      const productImage = document.getElementById('productImage').value
-
-      // Insert into table (maan lo table ka naam 'products' hai)
-      const { data, error } = await supabase
-        .from('products')
-        .insert([
-          { productname: productName, productimage: productImage }
-        ])
-
-      if (error) {
-        console.error(error)
-        alert("❌ Error inserting data: " + error.message)
-      } else {
-        console.log(data)
-        alert("✅ Product image URL saved successfully!")
-      }
-    })
 
 
     
@@ -513,13 +514,12 @@ const user = signUpResponse.data.user;
 
 
 
-
- <h2>Add Product Image URL</h2>
-  <form id="productForm">
-    <input type="text" id="productName" placeholder="Enter Product Name" required>
-    <input type="text" id="productImage" placeholder="Enter Image URL" required>
-    <button type="submit">Save</button>
-  </form>
+  <h1>Upload Product Image</h1>
+  
+  <input type="file" id="fileInput" accept="image/*">
+  <button id="uploadBtn">Upload</button>
+  
+  <img id="preview" src="" alt="Image Preview" style="display:none;">
 
   
 </body>

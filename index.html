@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Supabase - Product Upload (Single File)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Upload — Supabase</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-    form { display:flex; gap:10px; align-items:center; margin-bottom:20px; }
-    input[type="text"] { flex:1; padding:8px; }
-    input[type="file"] { padding:8px; }
-    button { padding:8px 12px; }
-    .preview { margin-top: 16px; display:flex; gap:12px; align-items:center; }
-    .preview img { max-width:120px; max-height:120px; object-fit:cover; border:1px solid #ccc; padding:4px; }
-    .log { margin-top:12px; color:#333; font-size:14px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    form { margin-bottom: 20px; }
+    input, button { margin: 5px 0; padding: 8px; }
+    .log { margin-top: 10px; color: darkblue; }
+    .preview { margin-top: 20px; }
+    .preview img { max-width: 200px; display: block; margin-bottom: 10px; }
   </style>
 </head>
 <body>
+
   <h2>Product Upload — Supabase</h2>
 
   <form id="productForm">
@@ -26,29 +26,22 @@
   <div id="resultArea"></div>
   <div id="message" class="log"></div>
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  <!-- Supabase JS client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    // --------------------------
-    // 🔧 Yahan apna Supabase info daalo
-    // --------------------------
- const supabaseUrl = "https://dklcbcbgpdrqsqupaaeb.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrbGNiY2JncGRycXNxdXBhYWViIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzI1ODk1MiwiZXhwIjoyMDcyODM0OTUyfQ.EN8lHW9BBf1qSNXw9fFnFU1rWgIoOsWqltks57qp-pY"; // apna anon key lagao
-    const client = supabase.createClient(supabaseUrl, supabaseKey);
+  <script>
+    // 🔹 Apna Supabase Project URL aur anon key yahan daalo
+    const SUPABASE_URL = "https://dklcbcbgpdrqsqupaaeb.supabase.co"
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrbGNiY2JncGRycXNxdXBhYWViIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzI1ODk1MiwiZXhwIjoyMDcyODM0OTUyfQ.EN8lHW9BBf1qSNXw9fFnFU1rWgIoOsWqltks57qp-pY"
 
-    // Bucket name — screenshot ke hisaab se maine 'images' liya hai.
-    // Agar tera bucket ka naam kuch aur hai (jaise 'product-images'), to yahan badal de.
+    // ✅ Initialize supabase client
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     const BUCKET = 'images'
 
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('productForm')
       const msg = document.getElementById('message')
       const resultArea = document.getElementById('resultArea')
-
-      if (!form) {
-        console.error('Form element nahi mila (id productForm).')
-        return
-      }
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault()
@@ -60,66 +53,46 @@
         const file = fileInput.files && fileInput.files[0]
 
         if (!productName) {
-          msg.textContent = 'Product name daalo.'
+          msg.textContent = '⚠️ Product name daalo.'
           return
         }
         if (!file) {
-          msg.textContent = 'Image select karo.'
+          msg.textContent = '⚠️ Image select karo.'
           return
         }
 
         try {
-          // unique filename (folder bhi add karlo agar chaho, screenshot me paths 'images/image.jpg' jaise hain)
           const timestamp = Date.now()
-          // sanitize file.name agar zaroori ho
           const sanitized = file.name.replace(/\s+/g, '_')
-          const pathInBucket = `images/${timestamp}_${sanitized}` // stored path in bucket
+          const pathInBucket = `images/${timestamp}_${sanitized}`
 
-          // Upload file
-          msg.textContent = 'Uploading image...'
+          msg.textContent = '⏳ Uploading image...'
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from(BUCKET)
             .upload(pathInBucket, file, { cacheControl: '3600', upsert: false })
 
           if (uploadError) {
-            console.error('Upload Error:', uploadError)
-            msg.textContent = 'Upload error: ' + uploadError.message
+            msg.textContent = '❌ Upload error: ' + uploadError.message
             return
           }
 
-          // Get public URL
+          // Get Public URL
           const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(pathInBucket)
           const publicUrl = urlData.publicUrl
 
-          if (!publicUrl) {
-            msg.textContent = 'Public URL nahi mila. Check bucket permissions (make public) ya path.'
-            console.error('Public URL missing, urlData:', urlData)
-            return
-          }
-
-          msg.textContent = 'Saving product to database...'
-
-          // Insert into table. Screenshot ke hisaab se table folder name "Products" aur column "productimage"
+          msg.textContent = '⏳ Saving product to database...'
           const { data, error } = await supabase
-            .from('Products') // ← agar tera table lowercase 'products' ho to yahan badal de
+            .from('Products')   // 🔹 Table ka naam check kar lo (case-sensitive hota hai)
             .insert([
-              {
-                productname: productName,
-                productimage: publicUrl // store full public url
-                // agar tu sirf path store karna chahe to publicUrl ki jagah pathInBucket daal sakta hai
-              }
+              { productname: productName, productimage: publicUrl }
             ])
 
           if (error) {
-            console.error('Insert error:', error)
-            msg.textContent = 'DB insert error: ' + (error.message || JSON.stringify(error))
+            msg.textContent = '❌ DB insert error: ' + error.message
             return
           }
 
-          // Success — show preview + saved data
           msg.textContent = '✅ Product saved successfully!'
-          const saved = data && data[0] ? data[0] : null
-
           const container = document.createElement('div')
           container.className = 'preview'
 
@@ -130,24 +103,20 @@
           const info = document.createElement('div')
           info.innerHTML = `<strong>${escapeHtml(productName)}</strong><br>
                             <small>Stored in bucket: ${escapeHtml(BUCKET)}<br>
-                            Public URL stored in productimage</small>`
+                            Public URL stored in database</small>`
 
           container.appendChild(img)
           container.appendChild(info)
           resultArea.appendChild(container)
 
-          console.log('Saved row:', saved)
-
-          // clear form
           form.reset()
         } catch (err) {
-          console.error('Unexpected error:', err)
-          msg.textContent = 'Kuch galat ho gaya: ' + (err.message || err)
+          msg.textContent = '❌ Unexpected error: ' + err.message
         }
       })
     })
 
-    // simple escape for text display
+    // simple escape
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, function (m) {
         return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]

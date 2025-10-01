@@ -73,7 +73,7 @@
           const pathInBucket = `images/${timestamp}_${sanitized}`
 
           msg.textContent = '⏳ Uploading image...'
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from(BUCKET)
             .upload(pathInBucket, file, { cacheControl: '3600', upsert: false })
 
@@ -87,7 +87,7 @@
           const publicUrl = urlData.publicUrl
 
           msg.textContent = '⏳ Saving product to database...'
-          const { data, error } = await supabase
+          const { error } = await supabase
             .from('Products')   // 🔹 Table name exact hona chahiye
             .insert([
               { 

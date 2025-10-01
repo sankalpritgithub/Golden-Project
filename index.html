@@ -1,136 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
   <title>Product Upload — Supabase</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    form { margin-bottom: 20px; }
-    input, button { margin: 5px 0; padding: 8px; width: 250px; display: block; }
-    .log { margin-top: 10px; color: darkblue; }
-    .preview { margin-top: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
-    .preview img { max-width: 200px; display: block; margin-bottom: 10px; }
+    .preview { margin-top: 15px; padding: 10px; border: 1px solid #ddd; display: flex; gap: 15px; align-items: center; }
+    .preview img { max-width: 120px; border: 1px solid #ccc; border-radius: 6px; }
+    .log { margin-top: 15px; font-weight: bold; }
+    .error { color: red; }
+    .success { color: green; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
   <h2>Product Upload — Supabase</h2>
 
   <form id="productForm">
-    <input type="text" id="productName" placeholder="Product Name" required />
-    <input type="number" id="productPrice" placeholder="Product Price" required />
-    <input type="file" id="productImage" accept="image/*" required />
+    <input type="text" id="productName" placeholder="Product Name" required /><br><br>
+    <input type="number" id="productPrice" placeholder="Product Price" required /><br><br>
+    <input type="file" id="productImage" accept="image/*" required /><br><br>
     <button type="submit">Upload & Save</button>
   </form>
 
   <div id="resultArea"></div>
   <div id="message" class="log"></div>
 
-  <!-- Supabase JS client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
-    // 🔹 Apna Supabase Project URL aur anon key yahan daalo
-    const SUPABASE_URL = "https://dklcbcbgpdrqsqupaaeb.supabase.co"
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrbGNiY2JncGRycXNxdXBhYWViIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzI1ODk1MiwiZXhwIjoyMDcyODM0OTUyfQ.EN8lHW9BBf1qSNXw9fFnFU1rWgIoOsWqltks57qp-pY"
+    const BUCKET = 'images'; // ✅ Make sure bucket exists & is public
 
-    // ✅ Initialize supabase client
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    const BUCKET = 'images'  // 🔹 Bucket ka exact naam (case-sensitive)
+    // 🔑 Replace with your Supabase credentials
+    const supabaseUrl = "https://dklcbcbgpdrqsqupaaeb.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrbGNiY2JncGRycXNxdXBhYWViIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzI1ODk1MiwiZXhwIjoyMDcyODM0OTUyfQ.EN8lHW9BBf1qSNXw9fFnFU1rWgIoOsWqltks57qp-pY";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     document.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('productForm')
-      const msg = document.getElementById('message')
-      const resultArea = document.getElementById('resultArea')
+      const form = document.getElementById('productForm');
+      const msg = document.getElementById('message');
+      const resultArea = document.getElementById('resultArea');
 
       form.addEventListener('submit', async (e) => {
-        e.preventDefault()
-        msg.textContent = ''
-        resultArea.innerHTML = ''
+        e.preventDefault();
+        msg.textContent = '';
+        resultArea.innerHTML = '';
 
-        const productName = document.getElementById('productName').value.trim()
-        const productPrice = document.getElementById('productPrice').value.trim()
-        const fileInput = document.getElementById('productImage')
-        const file = fileInput.files && fileInput.files[0]
+        const productName = document.getElementById('productName').value.trim();
+        const productPrice = document.getElementById('productPrice').value.trim();
+        const fileInput = document.getElementById('productImage');
+        const file = fileInput.files[0];
 
-        if (!productName) {
-          msg.textContent = '⚠️ Product name daalo.'
-          return
-        }
-        if (!productPrice) {
-          msg.textContent = '⚠️ Product price daalo.'
-          return
-        }
-        if (!file) {
-          msg.textContent = '⚠️ Image select karo.'
-          return
+        if (!productName || !productPrice || !file) {
+          msg.textContent = '❌ Please fill all fields!';
+          msg.className = 'log error';
+          return;
         }
 
         try {
-          const timestamp = Date.now()
-          const sanitized = file.name.replace(/\s+/g, '_')
-          const pathInBucket = `images/${timestamp}_${sanitized}`
+          const timestamp = Date.now();
+          const sanitized = file.name.replace(/\s+/g, '_');
+          const pathInBucket = `images/${timestamp}_${sanitized}`;
 
-          msg.textContent = '⏳ Uploading image...'
+          msg.textContent = 'Uploading image...';
           const { error: uploadError } = await supabase.storage
             .from(BUCKET)
-            .upload(pathInBucket, file, { cacheControl: '3600', upsert: false })
+            .upload(pathInBucket, file, { cacheControl: '3600', upsert: false });
 
           if (uploadError) {
-            msg.textContent = '❌ Upload error: ' + uploadError.message
-            return
+            console.error('Upload Error:', uploadError);
+            msg.textContent = '❌ Upload error: ' + uploadError.message;
+            msg.className = 'log error';
+            return;
           }
 
-          // Get Public URL
-          const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(pathInBucket)
-          const publicUrl = urlData.publicUrl
+          // ✅ Get Public URL
+          const { data: urlData, error: urlError } = supabase
+            .storage
+            .from(BUCKET)
+            .getPublicUrl(pathInBucket);
 
-          msg.textContent = '⏳ Saving product to database...'
-          const { error } = await supabase
-            .from('Products')   // 🔹 Table name exact hona chahiye
+          if (urlError) {
+            console.error('URL Error:', urlError);
+            msg.textContent = '❌ Error getting image URL';
+            msg.className = 'log error';
+            return;
+          }
+
+          const publicUrl = urlData.publicUrl;
+          console.log("Public Image URL:", publicUrl);
+
+          msg.textContent = 'Saving product to database...';
+          const { data, error } = await supabase
+            .from('Products')
             .insert([
-              { 
-                productname: productName, 
-                productprice: productPrice, 
-                productimage: publicUrl 
+              {
+                productname: productName,
+                productprice: productPrice,
+                productimage: publicUrl
               }
-            ])
+            ]);
 
           if (error) {
-            msg.textContent = '❌ DB insert error: ' + error.message
-            return
+            console.error('Insert error:', error);
+            msg.textContent = '❌ DB insert error: ' + error.message;
+            msg.className = 'log error';
+            return;
           }
 
-          msg.textContent = '✅ Product saved successfully!'
-          const container = document.createElement('div')
-          container.className = 'preview'
+          msg.textContent = '✅ Product saved successfully!';
+          msg.className = 'log success';
 
-          const img = document.createElement('img')
-          img.src = publicUrl
-          img.alt = productName
+          // ✅ Show preview
+          const container = document.createElement('div');
+          container.className = 'preview';
 
-          const info = document.createElement('div')
+          const img = document.createElement('img');
+          img.src = publicUrl;
+          img.alt = productName;
+
+          const info = document.createElement('div');
           info.innerHTML = `<strong>${escapeHtml(productName)}</strong><br>
                             💰 Price: ${escapeHtml(productPrice)}<br>
-                            <small>Stored in bucket: ${escapeHtml(BUCKET)}</small>`
+                            <small>Stored in bucket: ${escapeHtml(BUCKET)}</small>`;
 
-          container.appendChild(img)
-          container.appendChild(info)
-          resultArea.appendChild(container)
+          container.appendChild(img);
+          container.appendChild(info);
+          resultArea.appendChild(container);
 
-          form.reset()
+          form.reset();
         } catch (err) {
-          msg.textContent = '❌ Unexpected error: ' + err.message
+          console.error('Unexpected error:', err);
+          msg.textContent = '❌ Something went wrong: ' + (err.message || err);
+          msg.className = 'log error';
         }
-      })
-    })
+      });
+    });
 
-    // simple escape
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, function (m) {
-        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]
-      })
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
+      });
     }
   </script>
 </body>

@@ -7,9 +7,9 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     form { margin-bottom: 20px; }
-    input, button { margin: 5px 0; padding: 8px; }
+    input, button { margin: 5px 0; padding: 8px; width: 250px; display: block; }
     .log { margin-top: 10px; color: darkblue; }
-    .preview { margin-top: 20px; }
+    .preview { margin-top: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 8px; }
     .preview img { max-width: 200px; display: block; margin-bottom: 10px; }
   </style>
 </head>
@@ -19,6 +19,7 @@
 
   <form id="productForm">
     <input type="text" id="productName" placeholder="Product Name" required />
+    <input type="number" id="productPrice" placeholder="Product Price" required />
     <input type="file" id="productImage" accept="image/*" required />
     <button type="submit">Upload & Save</button>
   </form>
@@ -36,7 +37,7 @@
 
     // ✅ Initialize supabase client
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    const BUCKET = 'images'
+    const BUCKET = 'images'  // 🔹 Bucket ka exact naam (case-sensitive)
 
     document.addEventListener('DOMContentLoaded', () => {
       const form = document.getElementById('productForm')
@@ -49,11 +50,16 @@
         resultArea.innerHTML = ''
 
         const productName = document.getElementById('productName').value.trim()
+        const productPrice = document.getElementById('productPrice').value.trim()
         const fileInput = document.getElementById('productImage')
         const file = fileInput.files && fileInput.files[0]
 
         if (!productName) {
           msg.textContent = '⚠️ Product name daalo.'
+          return
+        }
+        if (!productPrice) {
+          msg.textContent = '⚠️ Product price daalo.'
           return
         }
         if (!file) {
@@ -82,9 +88,13 @@
 
           msg.textContent = '⏳ Saving product to database...'
           const { data, error } = await supabase
-            .from('Products')   // 🔹 Table ka naam check kar lo (case-sensitive hota hai)
+            .from('Products')   // 🔹 Table name exact hona chahiye
             .insert([
-              { productname: productName, productimage: publicUrl }
+              { 
+                productname: productName, 
+                productprice: productPrice, 
+                productimage: publicUrl 
+              }
             ])
 
           if (error) {
@@ -102,8 +112,8 @@
 
           const info = document.createElement('div')
           info.innerHTML = `<strong>${escapeHtml(productName)}</strong><br>
-                            <small>Stored in bucket: ${escapeHtml(BUCKET)}<br>
-                            Public URL stored in database</small>`
+                            💰 Price: ${escapeHtml(productPrice)}<br>
+                            <small>Stored in bucket: ${escapeHtml(BUCKET)}</small>`
 
           container.appendChild(img)
           container.appendChild(info)
